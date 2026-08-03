@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kennedy Violins Metronome</title>
+  <style>
+    :root {
+      --kv-blue: #0b7bc1;
+      --kv-blue-dark: #08649d;
+      --kv-blue-soft: #eef6fc;
+      --kv-text: #25364a;
+      --kv-muted: #6f7f90;
+      --kv-bg: #f4f6f8;
+      --kv-card: #ffffff;
+      --kv-green: #22a447;
+      --kv-green-bg: #e7f6ea;
+      --kv-red: #d92d20;
+      --kv-red-soft: #fef2f2;
+      --kv-yellow: #ffd54f;
+      --kv-border: #d7e2eb;
+      --kv-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--kv-bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100vh;
+      padding: max(6px, env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--kv-text);
+    }
+
+    .top-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    .brand-block {
+      text-align: center;
+    }
+
+    .logo {
+      width: 158px;
+      max-width: 58%;
+      display: block;
+      margin: 0 auto 2px;
+    }
+
+    .tagline {
+      margin: 0;
+      font-size: 12px;
+      color: var(--kv-muted);
+      line-height: 1.15;
+    }
+
+    .card {
+      background: var(--kv-card);
+      border-radius: 18px;
+      box-shadow: var(--kv-shadow);
+      padding: 12px 12px 10px;
+    }
+
+    .hero-card {
+      text-align: center;
+    }
+
+    .listening-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: var(--kv-blue-soft);
+      color: var(--kv-blue);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 4px;
+    }
+
+    .listening-pill::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--kv-blue);
+      box-shadow: 0 0 0 0 rgba(11, 123, 193, 0.28);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(11, 123, 193, 0.28); }
+      70% { box-shadow: 0 0 0 8px rgba(11, 123, 193, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(11, 123, 193, 0); }
+    }
+
+    .helper-text {
+      margin: 1px 0 6px;
+      font-size: 13px;
+      color: var(--kv-muted);
+      line-height: 1.15;
+    }
+
+    .bpm-display {
+      font-size: clamp(50px, 10vw, 74px);
+      font-weight: 500;
+      line-height: 0.92;
+      letter-spacing: -0.04em;
+      color: var(--kv-blue);
+      margin: 4px 0 2px;
+      font-family: Georgia, "Times New Roman", serif;
+      min-height: 0.95em;
+    }
+
+    .bpm-label {
+      font-size: 13px;
+      color: var(--kv-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+
+    .pulse-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 6px 0 10px;
+    }
+
+    .pulse {
+      width: 70px;
+      height: 70px;
+      border-radius: 999px;
+      background: #eef2f5;
+      border: 2px solid #d7e2eb;
+      transform: scale(1);
+      transition: transform 0.06s linear, background 0.06s linear, box-shadow 0.06s linear;
+    }
+
+    .pulse.beat {
+      background: var(--kv-yellow);
+      transform: scale(1.06);
+    }
+
+    .pulse.accent {
+      background: var(--kv-green);
+      transform: scale(1.1);
+      box-shadow: 0 0 0 10px rgba(34, 164, 71, 0.14);
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    button {
+      border: none;
+      border-radius: 13px;
+      min-height: 44px;
+      padding: 8px 10px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .primary {
+      background: linear-gradient(180deg, var(--kv-blue) 0%, var(--kv-blue-dark) 100%);
+      color: white;
+      box-shadow: 0 6px 14px rgba(11, 123, 193, 0.22);
+    }
+
+    .secondary {
+      background: #eef2f5;
+      color: var(--kv-text);
+      border: 2px solid var(--kv-border);
+    }
+
+    .danger {
+      background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      background: #edf2f7;
+      color: #667085;
+      margin-top: 8px;
+      min-width: 124px;
+    }
+
+    .status.playing {
+      color: var(--kv-green);
+      background: var(--kv-green-bg);
+    }
+
+    .status.stopped {
+      color: var(--kv-red);
+      background: var(--kv-red-soft);
+    }
+
+    .beat-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      min-height: 14px;
+    }
+
+    .beat-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: #d7e2eb;
+      transition: transform 0.06s linear, background 0.06s linear;
+    }
+
+    .beat-dot.active {
+      background: var(--kv-yellow);
+      transform: scale(1.12);
+    }
+
+    .beat-dot.accent {
+      background: var(--kv-green);
+      transform: scale(1.18);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .grid.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--kv-muted);
+      margin-bottom: 5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr 76px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--kv-blue);
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 40px;
+      border-radius: 12px;
+      border: 2px solid var(--kv-border);
+      background: #fff;
+      color: var(--kv-text);
+      padding: 0 12px;
+      font-size: 14px;
+      font-weight: 700;
+      outline: none;
+      font-family: inherit;
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--kv-blue);
+    }
+
+    .controls-title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: #111827;
+      margin: 0 0 1px;
+    }
+
+    .controls-subtitle {
+      text-align: center;
+      font-size: 12px;
+      color: var(--kv-muted);
+      margin: 0 0 8px;
+    }
+
+    .footer-copy {
+      margin-top: 2px;
+      color: var(--kv-muted);
+      line-height: 1.3;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .feature-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: #eef2f5;
+      border-radius: 14px;
+      padding: 8px 6px;
+    }
+
+    .feature {
+      text-align: center;
+      line-height: 1.1;
+      color: var(--kv-text);
+    }
+
+    .feature-icon {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 3px;
+    }
+
+    .feature strong {
+      display: block;
+      font-size: 10px;
+      margin-bottom: 1px;
+    }
+
+    .feature span:last-child {
+      display: block;
+      font-size: 9px;
+      color: var(--kv-muted);
+    }
+
+    @media (max-height: 760px) {
+      .app {
+        gap: 7px;
+        padding-top: max(5px, env(safe-area-inset-top));
+        padding-bottom: max(7px, env(safe-area-inset-bottom));
+      }
+
+      .logo {
+        width: 146px;
+      }
+
+      .tagline {
+        font-size: 11px;
+      }
+
+      .card {
+        padding: 10px 10px 9px;
+      }
+
+      .bpm-display {
+        font-size: clamp(46px, 9vw, 66px);
+      }
+
+      .pulse {
+        width: 60px;
+        height: 60px;
+      }
+
+      .controls-row {
+        gap: 6px;
+      }
+
+      button {
+        min-height: 40px;
+        font-size: 13px;
+      }
+
+      .feature-strip {
+        padding: 7px 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-title"></div>
+
+    <div class="brand-block">
+      <img
+        class="logo"
+        alt="Kennedy Violins"
+        src="https://cdn.shopify.com/s/files/1/2994/5334/files/Kennedy-logo_Flat.png?v=1615791994">
+      <p class="tagline">Simple, accurate timing for every musician.</p>
+    </div>
+
+    <div class="card hero-card">
+      <div class="listening-pill">Metronome</div>
+      <p class="helper-text">Set your tempo and keep steady time</p>
+
+      <div class="bpm-display" id="bpmDisplay">80</div>
+      <div class="bpm-label">BPM</div>
+
+      <div class="pulse-wrap">
+        <div class="pulse" id="pulse"></div>
+      </div>
+
+      <div class="controls-row">
+        <button id="startBtn" class="primary">Start</button>
+        <button id="tapBtn" class="secondary">Tap</button>
+        <button id="stopBtn" class="danger">Stop</button>
+      </div>
+
+      <div class="status" id="status">Ready</div>
+      <div class="beat-indicators" id="beatIndicators"></div>
+    </div>
+
+    <div class="card">
+      <p class="controls-title">Tempo Controls</p>
+      <p class="controls-subtitle">Use the slider or choose an Italian tempo marking</p>
+
+      <div class="grid">
+        <div class="field">
+          <label for="tempoMarking">Italian Tempo Name</label>
+          <select id="tempoMarking">
+            <option value="grave">Grave — Slow and solemn (20–40 BPM)</option>
+            <option value="larghissimo">Larghissimo — Extremely slow (20–40 BPM)</option>
+            <option value="lento">Lento — Slowly (40–60 BPM)</option>
+            <option value="largo">Largo — Broadly, very slow (40–60 BPM)</option>
+            <option value="larghetto">Larghetto — Rather slow and broad (60–66 BPM)</option>
+            <option value="adagio">Adagio — Slow and stately, “at ease” (66–76 BPM)</option>
+            <option value="andante" selected>Andante — At a walking pace (76–108 BPM)</option>
+            <option value="andantino">Andantino — Slightly faster than andante (80–108 BPM)</option>
+            <option value="allegretto">Allegretto — Moderately fast (98–109 BPM)</option>
+            <option value="moderato">Moderate speed (108–120 BPM)</option>
+            <option value="allegro">Allegro — Fast, bright (120–156 BPM)</option>
+            <option value="vivace">Vivace — Lively and fast (156–176 BPM)</option>
+            <option value="presto">Presto — Extremely fast (168–200 BPM)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="bpmSlider">Tempo</label>
+          <div class="slider-row">
+            <input id="bpmSlider" type="range" min="30" max="240" step="1" value="80">
+            <input id="bpmInput" type="number" min="30" max="240" step="1" value="80">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="controls-title">Playback Settings</p>
+      <p class="controls-subtitle">Customize feel and sound</p>
+
+      <div class="grid two">
+        <div class="field">
+          <label for="timeSignature">Time Signature</label>
+          <select id="timeSignature">
+            <option value="1">1/4</option>
+            <option value="2">2/4</option>
+            <option value="3">3/4</option>
+            <option value="4" selected>4/4</option>
+            <option value="5">5/4</option>
+            <option value="6">6/8</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="subdivision">Subdivision</label>
+          <select id="subdivision">
+            <option value="1" selected>Quarter Notes</option>
+            <option value="2">Eighth Notes</option>
+            <option value="3">Triplets</option>
+            <option value="4">Sixteenth Notes</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="volumeSlider">Volume</label>
+          <div class="slider-row">
+            <input id="volumeSlider" type="range" min="0" max="100" step="1" value="100">
+            <input id="volumeInput" type="number" min="0" max="100" step="1" value="100">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="soundType">Click Sound</label>
+          <select id="soundType">
+            <option value="beep" selected>Beep</option>
+            <option value="wood">Wood Block Style</option>
+            <option value="soft">Soft Click</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="footer-copy">
+        Choose a traditional Italian tempo term for a starting point, then fine-tune with the slider.
+        The first beat of each bar is accented so it’s easier to hear the pulse.
+      </div>
+    </div>
+
+    <div class="feature-strip">
+      <div class="feature">
+        <span class="feature-icon">🎻</span>
+        <strong>Practice Better</strong>
+        <span>Build steady timing</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">⏱️</span>
+        <strong>Quick Tempo</strong>
+        <span>Tap or dial it in</span>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">🎼</span>
+        <strong>Flexible Feel</strong>
+        <span>Subdivisions & accents</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let audioContext = null;
+    let isPlaying = false;
+    let nextNoteTime = 0;
+    let schedulerTimer = null;
+    let currentSubdivisionIndex = 0;
+    let currentBeatInMeasure = 0;
+    let tapTimes = [];
+
+    const lookaheadMs = 25;
+    const scheduleAheadTime = 0.12;
+
+    const tempoDefinitions = [
+      { key: 'grave', min: 20, max: 40, defaultBpm: 35, center: 30 },
+      { key: 'larghissimo', min: 20, max: 40, defaultBpm: 30, center: 30 },
+      { key: 'lento', min: 40, max: 60, defaultBpm: 50, center: 50 },
+      { key: 'largo', min: 40, max: 60, defaultBpm: 50, center: 50 },
+      { key: 'larghetto', min: 60, max: 66, defaultBpm: 63, center: 63 },
+      { key: 'adagio', min: 66, max: 76, defaultBpm: 72, center: 71 },
+      { key: 'andante', min: 76, max: 108, defaultBpm: 92, center: 92 },
+      { key: 'andantino', min: 80, max: 108, defaultBpm: 96, center: 94 },
+      { key: 'allegretto', min: 98, max: 109, defaultBpm: 104, center: 103.5 },
+      { key: 'moderato', min: 108, max: 120, defaultBpm: 114, center: 114 },
+      { key: 'allegro', min: 120, max: 156, defaultBpm: 138, center: 138 },
+      { key: 'vivace', min: 156, max: 176, defaultBpm: 166, center: 166 },
+      { key: 'presto', min: 168, max: 200, defaultBpm: 184, center: 184 }
+    ];
+
+    const bpmDisplay = document.getElementById('bpmDisplay');
+    const bpmSlider = document.getElementById('bpmSlider');
+    const bpmInput = document.getElementById('bpmInput');
+    const tempoMarking = document.getElementById('tempoMarking');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const volumeInput = document.getElementById('volumeInput');
+    const timeSignature = document.getElementById('timeSignature');
+    const subdivision = document.getElementById('subdivision');
+    const soundType = document.getElementById('soundType');
+    const pulse = document.getElementById('pulse');
+    const status = document.getElementById('status');
+    const beatIndicators = document.getElementById('beatIndicators');
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const tapBtn = document.getElementById('tapBtn');
+
+    function setStatus(text, type) {
+      status.textContent = text;
+      status.classList.remove('playing', 'stopped');
+
+      if (type === 'playing') status.classList.add('playing');
+      if (type === 'stopped') status.classList.add('stopped');
+    }
+
+    function setupAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    async function ensureAudioReady() {
+      setupAudio();
+      if (audioContext.state === 'suspended') {
+        try {
+          await audioContext.resume();
+        } catch (e) {
+          try { await audioContext.close(); } catch (_) {}
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+    }
+
+    async function closeAudioContext() {
+      if (audioContext) {
+        try { await audioContext.close(); } catch (e) {}
+        audioContext = null;
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function getBpm() {
+      return clamp(parseInt(bpmInput.value || bpmSlider.value || '80', 10), 30, 240);
+    }
+
+    function getClosestTempoKey(bpm) {
+      const matches = tempoDefinitions.filter(t => bpm >= t.min && bpm <= t.max);
+
+      if (matches.length > 0) {
+        let bestMatch = matches[0];
+        let bestDistance = Math.abs(bpm - bestMatch.center);
+
+        for (let i = 1; i < matches.length; i++) {
+          const distance = Math.abs(bpm - matches[i].center);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestMatch = matches[i];
+          }
+        }
+
+        return bestMatch.key;
+      }
+
+      let closest = tempoDefinitions[0];
+      let closestDistance = Math.abs(bpm - closest.center);
+
+      for (let i = 1; i < tempoDefinitions.length; i++) {
+        const distance = Math.abs(bpm - tempoDefinitions[i].center);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = tempoDefinitions[i];
+        }
+      }
+
+      return closest.key;
+    }
+
+    function syncTempoMarkingToBpm(bpm) {
+      tempoMarking.value = getClosestTempoKey(bpm);
+    }
+
+    function setBpm(value, updateTempoDropdown = true) {
+      const bpm = clamp(Math.round(value), 30, 240);
+      bpmSlider.value = bpm;
+      bpmInput.value = bpm;
+      bpmDisplay.textContent = bpm;
+
+      if (updateTempoDropdown) {
+        syncTempoMarkingToBpm(bpm);
+      }
+
+      if (isPlaying) {
+        setStatus(`Playing at ${bpm} BPM`, 'playing');
+      }
+    }
+
+    function getVolume() {
+      return clamp(parseInt(volumeInput.value || volumeSlider.value || '100', 10), 0, 100) / 100;
+    }
+
+    function setVolume(value) {
+      const vol = clamp(Math.round(value), 0, 100);
+      volumeSlider.value = vol;
+      volumeInput.value = vol;
+    }
+
+    function getBeatsPerMeasure() {
+      return parseInt(timeSignature.value, 10);
+    }
+
+    function getSubdivision() {
+      return parseInt(subdivision.value, 10);
+    }
+
+    function rebuildBeatIndicators() {
+      beatIndicators.innerHTML = '';
+      const beats = getBeatsPerMeasure();
+
+      for (let i = 0; i < beats; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'beat-dot';
+        dot.dataset.index = String(i);
+        beatIndicators.appendChild(dot);
+      }
+    }
+
+    function flashVisual(isAccent, beatIndex) {
+      pulse.classList.remove('beat', 'accent');
+      void pulse.offsetWidth;
+
+      pulse.classList.add(isAccent ? 'accent' : 'beat');
+
+      const dots = Array.from(document.querySelectorAll('.beat-dot'));
+      dots.forEach((dot, index) => {
+        dot.classList.remove('active', 'accent');
+        if (index === beatIndex) {
+          dot.classList.add(isAccent ? 'accent' : 'active');
+        }
+      });
+
+      setTimeout(() => {
+        pulse.classList.remove('beat', 'accent');
+        dots.forEach(dot => dot.classList.remove('active', 'accent'));
+      }, 90);
+    }
+
+    function playClick(time, isAccent) {
+      const ctx = audioContext;
+      if (!ctx) return;
+      const gainNode = ctx.createGain();
+      const osc = ctx.createOscillator();
+
+      const volume = getVolume();
+      const sound = soundType.value;
+
+      let frequency = isAccent ? 1500 : 1100;
+      let duration = isAccent ? 0.05 : 0.04;
+      let gainAmount = isAccent ? 0.6 : 0.45;
+
+      if (sound === 'wood') {
+        frequency = isAccent ? 1200 : 900;
+        duration = isAccent ? 0.035 : 0.025;
+        gainAmount = isAccent ? 0.5 : 0.35;
+        osc.type = 'triangle';
+      } else if (sound === 'soft') {
+        frequency = isAccent ? 1100 : 800;
+        duration = isAccent ? 0.05 : 0.035;
+        gainAmount = isAccent ? 0.35 : 0.25;
+        osc.type = 'sine';
+      } else {
+        osc.type = 'square';
+      }
+
+      osc.frequency.setValueAtTime(frequency, time);
+
+      const targetGain = clamp(gainAmount * volume, 0, 1.0);
+      gainNode.gain.setValueAtTime(0.0001, time);
+      gainNode.gain.exponentialRampToValueAtTime(targetGain, time + 0.002);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      osc.start(time);
+      osc.stop(time + duration + 0.01);
+    }
+
+    function scheduleNote(time) {
+      const ctx = audioContext;
+      if (!ctx) return;
+      const subdiv = getSubdivision();
+      const isMainBeat = currentSubdivisionIndex === 0;
+      const isAccent = isMainBeat && currentBeatInMeasure === 0;
+
+      if (isMainBeat) {
+        const beatIndexForUI = currentBeatInMeasure;
+        const delay = Math.max(0, (time - ctx.currentTime) * 1000);
+        setTimeout(() => flashVisual(isAccent, beatIndexForUI), delay);
+      }
+
+      playClick(time, isAccent && isMainBeat);
+
+      currentSubdivisionIndex += 1;
+
+      if (currentSubdivisionIndex >= subdiv) {
+        currentSubdivisionIndex = 0;
+        currentBeatInMeasure = (currentBeatInMeasure + 1) % getBeatsPerMeasure();
+      }
+    }
+
+    function nextNote() {
+      const secondsPerBeat = 60 / getBpm();
+      const interval = secondsPerBeat / getSubdivision();
+      nextNoteTime += interval;
+    }
+
+    function scheduler() {
+      if (!isPlaying) return;
+
+      const ctx = audioContext;
+      if (!ctx) return;
+      if (ctx.state !== 'running') return;
+
+      while (nextNoteTime < ctx.currentTime + scheduleAheadTime) {
+        scheduleNote(nextNoteTime);
+        nextNote();
+      }
+    }
+
+    async function startMetronome() {
+      try {
+        await ensureAudioReady();
+        const ctx = audioContext;
+
+        if (schedulerTimer) {
+          clearInterval(schedulerTimer);
+          schedulerTimer = null;
+        }
+
+        isPlaying = true;
+        currentSubdivisionIndex = 0;
+        currentBeatInMeasure = 0;
+        nextNoteTime = ctx.currentTime + 0.05;
+
+        scheduler();
+        schedulerTimer = setInterval(scheduler, lookaheadMs);
+
+        setStatus(`Playing at ${getBpm()} BPM`, 'playing');
+      } catch (error) {
+        console.error('Failed to start metronome:', error);
+        setStatus('Could not start audio', 'stopped');
+      }
+    }
+
+    function stopMetronome() {
+      isPlaying = false;
+
+      if (schedulerTimer) {
+        clearInterval(schedulerTimer);
+        schedulerTimer = null;
+      }
+
+      setStatus('Stopped', 'stopped');
+      pulse.classList.remove('beat', 'accent');
+
+      document.querySelectorAll('.beat-dot').forEach(dot => {
+        dot.classList.remove('active', 'accent');
+      });
+    }
+
+    function handleTapTempo() {
+      const now = performance.now();
+
+      tapTimes.push(now);
+      if (tapTimes.length > 6) {
+        tapTimes.shift();
+      }
+
+      if (tapTimes.length >= 2) {
+        const intervals = [];
+        for (let i = 1; i < tapTimes.length; i++) {
+          intervals.push(tapTimes[i] - tapTimes[i - 1]);
+        }
+
+        const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const bpm = 60000 / avgInterval;
+
+        if (isFinite(bpm)) {
+          setBpm(bpm, true);
+          setStatus(`Tap tempo: ${Math.round(bpm)} BPM`, isPlaying ? 'playing' : '');
+        }
+      }
+    }
+
+    bpmSlider.addEventListener('input', e => {
+      setBpm(e.target.value, true);
+    });
+
+    bpmInput.addEventListener('input', e => {
+      setBpm(e.target.value, true);
+    });
+
+    tempoMarking.addEventListener('change', e => {
+      const selected = tempoDefinitions.find(t => t.key === e.target.value);
+      if (!selected) return;
+      setBpm(selected.defaultBpm, false);
+    });
+
+    volumeSlider.addEventListener('input', e => setVolume(e.target.value));
+    volumeInput.addEventListener('input', e => setVolume(e.target.value));
+
+    startBtn.addEventListener('click', startMetronome);
+    stopBtn.addEventListener('click', stopMetronome);
+    tapBtn.addEventListener('click', handleTapTempo);
+
+    timeSignature.addEventListener('change', () => {
+      rebuildBeatIndicators();
+      currentBeatInMeasure = 0;
+      currentSubdivisionIndex = 0;
+    });
+
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'hidden') {
+        // Ensure metronome stops when leaving the page/tab
+        stopMetronome();
+        closeAudioContext();
+      } else if (document.visibilityState === 'visible' && isPlaying) {
+        try {
+          await ensureAudioReady();
+          const ctx = audioContext;
+          nextNoteTime = ctx.currentTime + 0.05;
+        } catch (error) {
+          console.error('Resume after visibility change failed:', error);
+        }
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      stopMetronome();
+      closeAudioContext();
+    });
+
+    window.addEventListener('blur', () => {
+      stopMetronome();
+      closeAudioContext();
+    });
+
+    setBpm(80, true);
+    setVolume(100);
+    rebuildBeatIndicators();
+    setStatus('Ready', '');
+  </script>
+</body>
+</html>
